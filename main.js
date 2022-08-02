@@ -49,7 +49,7 @@ let calcShaSum = async function(dirname){
     let stats = await fs.promises.lstat(dirname);
     let sum = (await exec(`sha1sum`,dirname)).slice(0,40);
     if(stats.isFile()){
-        sum += (await exec(`sha1sum '${dirname.replace("'","'\"'\"'")}'`)).slice(0,40);
+        sum += (await exec(`sha1sum '${dirname.replaceAll("'","'\"'\"'")}'`)).slice(0,40);
     }else if(stats.isDirectory()){
         sum += (await Promise.all(fs.readdirSync(dirname).map(
             async s=>{
