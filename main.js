@@ -29,25 +29,41 @@ let fsReadAccess = function(name){
     });
 };
 
+let fsExists = function(name){
+    return new Promise((res,rej)=>{
+        fs.exists(name,(result)=>{
+            res(result);
+        });
+    });
+};
+
 
 let calcShaSum = async function(dirname){
     console.log(`got ${dirname}`);
     //check if directory
-    if(!fs.existsSync(dirname))
+    if(!(await fsExists(dirname)))
         throw new Error(`file ${dirname} does not exist`);
     if(!(await fsReadAccess(dirname)))
         throw new Error(`no read permission file ${dirname}`);
 
-    let stats = fs.lstatSync(dirname);
+    let stats = await fs.promises.lstat(dirname);
     let sum = (await exec(`sha1sum`,dirname)).slice(0,40);
     if(stats.isFile()){
         sum += (await exec(`sha1sum ${dirname}`)).slice(0,40);
     }else if(stats.isDirectory()){
+        sum += (await Promise.all(fs.readdirSync(dirname).map(
+            async s=>{
+                let subname = path.join(dirname,s);
+                return await calcShaSum(subname);
+            }
+        ))).join("");
+        /*
         let subs = fs.readdirSync(dirname).map(s=>path.join(dirname,s));
         for(let i = 0; i < subs.length; i++){
             let sub = subs[i];
             sum += await calcShaSum(sub);
         }
+        */
     }else{
         throw new Error(`unexpected file type ${dirname}`);
     }
